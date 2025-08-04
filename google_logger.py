@@ -1,17 +1,21 @@
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+from datetime import datetime
 import os
 import json
 
-def log_scan(user_input, asset_type):
+def log_to_google_sheet(wallet, asset_type, score, status):
     try:
-        scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-        creds_json = os.environ.get("GOOGLE_CREDENTIALS_JSON")
-        creds_dict = json.loads(creds_json)
-        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+        scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+        creds_json = json.loads(os.environ.get("GOOGLE_CREDENTIALS_JSON"))
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_json, scope)
         client = gspread.authorize(creds)
 
-        sheet = client.open("ADC_AssetGuard_Logs").sheet1
-        sheet.append_row([user_input, asset_type])
+        sheet = client.open("AssetGuard_Logs").sheet1  # Name of your sheet
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        row = [now, wallet, asset_type, str(score), status]
+        sheet.append_row(row)
+
     except Exception as e:
-        print("Logging failed:", e)
+        print(f"❌ Google Sheet log error: {e}")
