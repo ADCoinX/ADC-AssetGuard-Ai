@@ -1,13 +1,17 @@
-def generate_iso_xml(data):
-    asset_type = data.get("type", "Unknown")
-    xml = f'''<?xml version="1.0" encoding="UTF-8"?>
-<AssetAuditReport>
-  <AssetType>{asset_type}</AssetType>
-  <Input>{data.get("input")}</Input>
-  <Network>{data.get("network")}</Network>
-  <Details>{data.get("info")}</Details>
-  <RiskScore>{data.get("risk_score")}</RiskScore>
-  <ComplianceStandard>ISO 20022-Inspired + ISO/TC 307</ComplianceStandard>
-  <GeneratedBy>ADC AssetGuard + AI</GeneratedBy>
-</AssetAuditReport>'''
-    return xml
+from datetime import datetime
+
+def generate_iso_xml(asset, asset_type="Unknown", risk_score=0, note="Validated via ADC AssetGuard"):
+    now = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    xml_template = f"""<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pain.001.001.03">
+    <AssetValidationReport>
+        <AssetID>{asset}</AssetID>
+        <AssetType>{asset_type}</AssetType>
+        <RiskScore>{risk_score}</RiskScore>
+        <ValidationNote>{note}</ValidationNote>
+        <ValidationDate>{now}</ValidationDate>
+        <Standard>ISO 20022-Inspired</Standard>
+        <Issuer>ADC AssetGuard + AI</Issuer>
+    </AssetValidationReport>
+</Document>"""
+    return xml_template
