@@ -1,15 +1,31 @@
 from flask import Flask, render_template, request, send_file
 from api_handler import get_asset_data
 import io
+import os
 
 app = Flask(__name__)
+
+def update_user_count():
+    count_file = os.path.join('static', 'user_count.txt')
+    try:
+        if os.path.exists(count_file):
+            with open(count_file, 'r') as f:
+                count = int(f.read().strip())
+        else:
+            count = 0
+        count += 1
+        with open(count_file, 'w') as f:
+            f.write(str(count))
+    except:
+        pass
 
 @app.route("/", methods=["GET", "POST"])
 def home():
     result = {}
     if request.method == "POST":
-        asset_input = request.form["input"]
+        asset_input = request.form["input"].strip()
         result = get_asset_data(asset_input)
+        update_user_count()
     return render_template("index.html", result=result)
 
 @app.route("/export-iso")
