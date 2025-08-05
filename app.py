@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, send_file
 from api_handler import get_asset_data
+from iso_export import generate_iso_xml
 import io
 import os
 
@@ -31,21 +32,30 @@ def home():
 
 @app.route("/export-iso")
 def export_iso():
-    asset = request.args.get("asset", "asset")
-    result = get_asset_data(asset)
-    xml_data = generate_iso_xml(
-        asset=asset,
-        asset_type=result.get("type", "Unknown"),
-        risk_score=result.get("risk_score", 0),
-        note="Validated via ADC AssetGuard"
-    )
-    return send_file(
-        io.BytesIO(xml_data.encode()),
-        mimetype="application/xml",
-        as_attachment=True,
-        download_name=f"{asset}_iso.xml"
-    )
-    
+    try:
+        asset = request.args.get("asset", "asset")
+        result = get_asset_data(asset)
+
+        asset_type = result.get("type", "Unknown")
+        risk_score = result.get("risk_score", 0)
+
+        xml_data = generate_iso_xml(
+            asset=asset,
+            asset_type=asset_type,
+            risk_score=risk_score,
+            note="Validated via ADC AssetGuard"
+        )
+
+        return send_file(
+            io.BytesIO(xml_data.encode()),
+            mimetype="application/xml",
+            as_attachment=True,
+            download_name=f"{asset}_iso.xml"
+        )
+
+    except Exception as e:
+        return f"❌ Export failed: {str(e)}", 500
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 1000))
     app.run(host="0.0.0.0", port=port)
