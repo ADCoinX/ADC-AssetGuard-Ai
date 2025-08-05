@@ -27,9 +27,7 @@
             <p><strong>Info:</strong> {{ result.info }}</p>
             <p><strong>AI Risk Score:</strong> {{ result.risk_score }} / 100</p>
 
-           {% if result.iso_xml %}
-<a href="/export-iso?asset={{ result.input }}&xml={{ result.iso_xml | urlencode }}" class="btn-download">⬇ Export ISO XML</a>
-{% endif %}
+            <a href="/export-iso?asset={{ result.input }}" class="btn-download" target="_blank">⬇ Export ISO XML</a>
         </div>
         {% endif %}
 
