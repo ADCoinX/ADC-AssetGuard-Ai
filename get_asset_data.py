@@ -2,16 +2,21 @@ import requests
 from ai_risk import calculate_risk_score
 from blacklist import is_blacklisted
 
+ETHERSCAN_API_KEY = "freekey"  # Ganti dengan key sebenar jika perlu
+
 def get_asset_data(input_str):
     input_str = input_str.strip()
-    if is_wallet(input_str):
-        return fetch_wallet_data(input_str)
-    elif is_token_contract(input_str):
-        return fetch_token_data(input_str)
-    elif is_coin_symbol(input_str):
+    if is_coin_symbol(input_str):
         return fetch_coin_data(input_str)
-    elif is_nft_contract(input_str):
-        return fetch_nft_data(input_str)
+    elif is_contract(input_str):
+        if is_token(input_str):
+            return fetch_token_data(input_str)
+        elif is_nft(input_str):
+            return fetch_nft_data(input_str)
+        else:
+            return fetch_wallet_data(input_str)  # fallback to wallet if unknown
+    elif is_wallet(input_str):
+        return fetch_wallet_data(input_str)
     else:
         return {
             "input": input_str,
@@ -22,9 +27,28 @@ def get_asset_data(input_str):
         }
 
 # ==== Detection Helpers ====
+
+def is_contract(addr):
+    return addr.startswith("0x") and len(addr) == 42
+
+def is_token(addr):
+    try:
+        r = requests.get(f"https://api.etherscan.io/api?module=contract&action=getsourcecode&address={addr}&apikey={ETHERSCAN_API_KEY}")
+        data = r.json()
+        name = data.get("result", [{}])[0].get("ContractName", "")
+        return name != ""
+    except:
+        return False
+
+def is_nft(addr):
+    try:
+        r = requests.get(f"https://api.opensea.io/api/v1/asset_contract/{addr}")
+        return r.status_code == 200
+    except:
+        return False
+
 def is_wallet(s):
     return (
-        (s.startswith("0x") and len(s) == 42) or  # ETH, BSC, Polygon, etc.
         (s.startswith("T") and len(s) == 34) or   # TRON
         (s.startswith("r") and len(s) >= 25) or   # XRP
         (s.startswith("1") or s.startswith("3") or s.startswith("bc1")) or  # BTC
@@ -33,21 +57,14 @@ def is_wallet(s):
         ("-" in s and len(s) >= 42)               # Hedera
     )
 
-def is_token_contract(s):
-    return s.startswith("0x") and len(s) == 42  # Simplified contract check
-
 def is_coin_symbol(s):
     return s.upper() in ["BTC", "ETH", "BNB", "XRP", "SOL", "ADA", "DOGE", "MATIC"]
-
-def is_nft_contract(s):
-    return s.startswith("0x") and len(s) == 42
 
 # ==== Real Fetching Logic ====
 
 def fetch_wallet_data(addr):
-    # Example: ETH only for now
     try:
-        r = requests.get(f"https://api.etherscan.io/api?module=account&action=balance&address={addr}&tag=latest&apikey=YOUR_KEY")
+        r = requests.get(f"https://api.etherscan.io/api?module=account&action=balance&address={addr}&tag=latest&apikey={ETHERSCAN_API_KEY}")
         data = r.json()
         balance = int(data.get("result", 0)) / 1e18
     except:
@@ -59,18 +76,18 @@ def fetch_wallet_data(addr):
         "network": "Ethereum",
         "balance": f"{balance:.4f} ETH",
         "risk_score": score,
-        "info": "Wallet validated via Etherscan"
+        "info": "Validated via Etherscan"
     }
 
 def fetch_token_data(contract):
     try:
-        url = f"https://api.etherscan.io/api?module=token&action=tokeninfo&contractaddress={contract}&apikey=YOUR_KEY"
+        url = f"https://api.etherscan.io/api?module=token&action=tokeninfo&contractaddress={contract}&apikey={ETHERSCAN_API_KEY}"
         r = requests.get(url)
         data = r.json()
         name = data.get("result", {}).get("name", "Unknown")
         symbol = data.get("result", {}).get("symbol", "Unknown")
-        holders = data.get("result", {}).get("holdersCount", "N/A")
-        score = calculate_risk_score(holders=int(holders))
+        holders = int(data.get("result", {}).get("holdersCount", "0"))
+        score = calculate_risk_score(holders=holders)
         return {
             "input": contract,
             "type": "Token",
