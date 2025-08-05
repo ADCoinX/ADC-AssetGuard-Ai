@@ -32,7 +32,7 @@ def get_asset_data(input_str):
             "network": "N/A",
             "risk_score": 0,
             "info": "❌ Invalid format or unsupported input",
-            "iso": generate_iso_xml(input_str, "unknown", 0),
+            "iso": generate_iso_xml(input_str),
             "usage": get_usage_stats()
         }
 
