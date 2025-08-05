@@ -6,15 +6,14 @@ ETHERSCAN_API_KEY = "freekey"  # Ganti dengan key sebenar jika perlu
 
 def get_asset_data(input_str):
     input_str = input_str.strip()
+    print(f"[DEBUG] Input: {input_str}")
+
     if is_coin_symbol(input_str):
         return fetch_coin_data(input_str)
-    elif is_contract(input_str):
-        if is_token(input_str):
-            return fetch_token_data(input_str)
-        elif is_nft(input_str):
-            return fetch_nft_data(input_str)
-        else:
-            return fetch_wallet_data(input_str)  # fallback to wallet if unknown
+    elif is_token_contract(input_str):
+        return fetch_token_data(input_str)
+    elif is_nft(input_str):
+        return fetch_nft_data(input_str)
     elif is_wallet(input_str):
         return fetch_wallet_data(input_str)
     else:
@@ -28,15 +27,12 @@ def get_asset_data(input_str):
 
 # ==== Detection Helpers ====
 
-def is_contract(addr):
-    return addr.startswith("0x") and len(addr) == 42
-
-def is_token(addr):
+def is_token_contract(addr):
     try:
-        r = requests.get(f"https://api.etherscan.io/api?module=contract&action=getsourcecode&address={addr}&apikey={ETHERSCAN_API_KEY}")
+        url = f"https://api.etherscan.io/api?module=token&action=tokeninfo&contractaddress={addr}&apikey={ETHERSCAN_API_KEY}"
+        r = requests.get(url)
         data = r.json()
-        name = data.get("result", [{}])[0].get("ContractName", "")
-        return name != ""
+        return data.get("status") == "1" and "name" in data.get("result", {})
     except:
         return False
 
@@ -49,12 +45,13 @@ def is_nft(addr):
 
 def is_wallet(s):
     return (
-        (s.startswith("T") and len(s) == 34) or   # TRON
-        (s.startswith("r") and len(s) >= 25) or   # XRP
+        (s.startswith("0x") and len(s) == 42) or   # ETH/BSC wallets
+        (s.startswith("T") and len(s) == 34) or    # TRON
+        (s.startswith("r") and len(s) >= 25) or    # XRP
         (s.startswith("1") or s.startswith("3") or s.startswith("bc1")) or  # BTC
-        (s.startswith("axelar1")) or              # Axelar
-        (s.endswith(".near")) or                  # NEAR
-        ("-" in s and len(s) >= 42)               # Hedera
+        (s.startswith("axelar1")) or               # Axelar
+        (s.endswith(".near")) or                   # NEAR
+        ("-" in s and len(s) >= 42)                # Hedera
     )
 
 def is_coin_symbol(s):
