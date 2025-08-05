@@ -23,7 +23,7 @@ def get_asset_data(input_str):
         result = fetch_coin_data(input_str)
     elif is_token_contract(input_str):
         result = fetch_token_data(input_str)
-    elif is_nft(input_str):
+    elif is_nft_contract(input_str):
         result = fetch_nft_data(input_str)
     else:
         return {
@@ -32,7 +32,7 @@ def get_asset_data(input_str):
             "network": "N/A",
             "risk_score": 0,
             "info": "❌ Invalid format or unsupported input",
-            "iso": generate_iso_xml(input_str),
+            "iso": generate_iso_xml(input_str, "unknown", 0),
             "usage": get_usage_stats()
         }
 
@@ -41,31 +41,38 @@ def get_asset_data(input_str):
     result["usage"] = get_usage_stats()
     return result
 
-# ==== Detection ====
+# =====================
+# Detection Functions
+# =====================
+
+def is_coin_symbol(s):
+    return s.upper() in [
+        "BTC", "ETH", "BNB", "XRP", "SOL", "ADA",
+        "DOGE", "MATIC", "TRX", "NEAR", "HBAR", "AXL", "AVAX", "DOT"
+    ]
 
 def is_token_contract(addr):
     try:
         url = f"https://api.ethplorer.io/getTokenInfo/{addr}?apiKey=freekey"
-        r = requests.get(url)
+        r = requests.get(url, timeout=8)
         return r.status_code == 200 and "name" in r.json()
     except:
         return False
 
-def is_nft(addr):
+def is_nft_contract(addr):
     try:
-        r = requests.get(f"https://api.opensea.io/api/v1/asset_contract/{addr}")
+        r = requests.get(f"https://api.opensea.io/api/v1/asset_contract/{addr}", timeout=8)
         return r.status_code == 200
     except:
         return False
 
-def is_coin_symbol(s):
-    return s.upper() in ["BTC", "ETH", "BNB", "XRP", "SOL", "ADA", "DOGE", "MATIC", "TRX", "NEAR", "HBAR", "AXL", "AVAX", "DOT"]
-
-# ==== Fetching ====
+# =====================
+# Fetching Functions
+# =====================
 
 def fetch_coin_data(symbol):
     try:
-        r = requests.get(f"https://api.coingecko.com/api/v3/coins/{symbol.lower()}")
+        r = requests.get(f"https://api.coingecko.com/api/v3/coins/{symbol.lower()}", timeout=10)
         data = r.json()
         price = data["market_data"]["current_price"]["usd"]
         volume = data["market_data"]["total_volume"]["usd"]
@@ -75,12 +82,12 @@ def fetch_coin_data(symbol):
             "input": symbol.upper(),
             "type": "Coin",
             "network": "Native",
-            "info": f"Price: ${price}, Volume: ${volume}, Market Cap: ${mcap}",
+            "info": f"Price: ${price:,}, Volume: ${volume:,}, Market Cap: ${mcap:,}",
             "risk_score": score
         }
     except:
         return {
-            "input": symbol,
+            "input": symbol.upper(),
             "type": "Coin",
             "network": "Unknown",
             "info": "❌ Coin data unavailable",
@@ -89,7 +96,7 @@ def fetch_coin_data(symbol):
 
 def fetch_token_data(addr):
     try:
-        r = requests.get(f"https://api.ethplorer.io/getTokenInfo/{addr}?apiKey=freekey")
+        r = requests.get(f"https://api.ethplorer.io/getTokenInfo/{addr}?apiKey=freekey", timeout=10)
         data = r.json()
         name = data.get("name", "Unknown")
         symbol = data.get("symbol", "N/A")
@@ -99,7 +106,7 @@ def fetch_token_data(addr):
             "input": addr,
             "type": "Token",
             "network": "Ethereum",
-            "info": f"{name} ({symbol}), Holders: {holders}",
+            "info": f"{name} ({symbol}), Holders: {holders:,}",
             "risk_score": score
         }
     except:
@@ -113,7 +120,7 @@ def fetch_token_data(addr):
 
 def fetch_nft_data(addr):
     try:
-        r = requests.get(f"https://api.opensea.io/api/v1/asset_contract/{addr}")
+        r = requests.get(f"https://api.opensea.io/api/v1/asset_contract/{addr}", timeout=10)
         data = r.json()
         name = data.get("name", "Unknown")
         supply = data.get("total_supply", "N/A")
