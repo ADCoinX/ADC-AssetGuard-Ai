@@ -1,47 +1,51 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>ADC AssetGuard + AI</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body {
-      margin: 0; font-family: Arial; color: #fff;
-      background-image: url('/static/background.jpg');
-      background-size: cover; background-position: center;
-    }
-    .container { max-width: 600px; margin: auto; padding: 30px; background: rgba(0,0,0,0.6); border-radius: 10px; margin-top: 50px; }
-    input[type=text] { width: 100%; padding: 10px; font-size: 16px; margin-top: 10px; border-radius: 5px; border: none; }
-    button { padding: 10px 20px; margin-top: 10px; background: gold; border: none; border-radius: 5px; font-weight: bold; }
-    .risk-bar { height: 20px; width: 100%; background: #444; border-radius: 5px; margin-top: 10px; }
-    .risk-fill { height: 100%; background: limegreen; text-align: center; color: black; border-radius: 5px; }
-    .disclaimer { font-size: 12px; margin-top: 40px; color: #aaa; text-align: center; }
-  </style>
+    <meta charset="UTF-8">
+    <title>ADC AssetGuard + AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='logo.png') }}">
 </head>
-<body>
-  <div class="container">
-    <h2>ADC AssetGuard + AI</h2>
-    <form method="POST">
-      <label>Enter Wallet / Token / Coin / NFT:</label>
-      <input type="text" name="asset" placeholder="0x..., BTC, SHIB, etc" required>
-      <button type="submit">Validate</button>
-    </form>
+<body style="background-image: url('{{ url_for('static', filename='background.jpg') }}'); background-size: cover; background-repeat: no-repeat; background-attachment: fixed;">
 
-    {% if result %}
-      <h3>Detected: {{ result.type }}</h3>
-      <p><strong>Network:</strong> {{ result.network }}</p>
-      <p><strong>Balance / Info:</strong> {{ result.balance or result.info }}</p>
-      <p><strong>AI Risk Score:</strong> {{ result.risk_score }}/100</p>
-      <div class="risk-bar">
-        <div class="risk-fill" style="width:{{ result.risk_score }}%;">{{ result.risk_score }}%</div>
-      </div>
-      <br>
-      <a href="/export-iso?asset={{ result.input }}">📄 Download ISO XML Report</a>
-    {% endif %}
+    <div class="container">
+        <img src="{{ url_for('static', filename='logo.png') }}" class="logo" alt="logo">
+        <h1>ADC AssetGuard + AI</h1>
+        <p class="tagline">Validate Tokens, Coins & NFTs with ISO & AI Scoring</p>
 
-    <div class="disclaimer">
-      © 2025 ADCX Lab. Results powered by live data & AI scoring. ISO 20022-Inspired Reporting aligned with ISO/TC 307.
+        <form method="POST">
+            <input type="text" name="input" placeholder="Enter Token / Coin / NFT" required>
+            <button type="submit">Validate</button>
+        </form>
+
+        {% if result %}
+        <div class="result">
+            <h2>Validation Result</h2>
+            <p><strong>Input:</strong> {{ result.input }}</p>
+            <p><strong>Type:</strong> {{ result.type }}</p>
+            <p><strong>Network:</strong> {{ result.network }}</p>
+            <p><strong>Info:</strong> {{ result.info }}</p>
+            <p><strong>AI Risk Score:</strong> {{ result.risk_score }} / 100</p>
+
+            {% if result.xml %}
+            <a href="/export-iso?asset={{ result.input }}&xml={{ result.xml | urlencode }}" class="btn-download">⬇ Export ISO XML</a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <div class="footer">
+            <p>📊 Total Users: <span id="userCount">loading...</span></p>
+            <p>🔒 Powered by ADCX Lab | ISO 20022-Inspired</p>
+        </div>
     </div>
-  </div>
+
+    <script>
+        fetch('/static/user_count.txt')
+            .then(res => res.text())
+            .then(data => {
+                document.getElementById("userCount").innerText = data.trim();
+            });
+    </script>
+
 </body>
 </html>
