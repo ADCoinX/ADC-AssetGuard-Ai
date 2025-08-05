@@ -31,15 +31,21 @@ def home():
 
 @app.route("/export-iso")
 def export_iso():
-    xml_content = request.args.get("xml", "")
     asset = request.args.get("asset", "asset")
+    result = get_asset_data(asset)
+    xml_data = generate_iso_xml(
+        asset=asset,
+        asset_type=result.get("type", "Unknown"),
+        risk_score=result.get("risk_score", 0),
+        note="Validated via ADC AssetGuard"
+    )
     return send_file(
-        io.BytesIO(xml_content.encode()),
+        io.BytesIO(xml_data.encode()),
         mimetype="application/xml",
         as_attachment=True,
         download_name=f"{asset}_iso.xml"
     )
-
+    
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 1000))
     app.run(host="0.0.0.0", port=port)
