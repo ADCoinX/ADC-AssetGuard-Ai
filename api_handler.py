@@ -44,12 +44,14 @@ def get_asset_data(input_str):
 # ==== Detection ====
 
 def is_token_contract(addr):
-    try:
-        url = f"https://api.ethplorer.io/getTokenInfo/{addr}?apiKey=freekey"
-        r = requests.get(url)
-        return r.status_code == 200 and "name" in r.json()
-    except:
-        return False
+    if addr.startswith("0x") and len(addr) == 42:
+        try:
+            url = f"https://api.ethplorer.io/getTokenInfo/{addr}?apiKey=freekey"
+            r = requests.get(url)
+            return r.status_code == 200 and "name" in r.json()
+        except:
+            return False
+    return False
 
 def is_nft(addr):
     try:
