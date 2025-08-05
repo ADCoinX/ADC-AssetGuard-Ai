@@ -10,22 +10,59 @@ app = Flask(__name__)
 @app.route('/', methods=['GET', 'POST'])
 def index():
     result = None
-    if request.method == 'POST':
-        user_input = request.form.get('asset', '').strip()  # match with HTML form name="asset"
-        if user_input:
+    try:
+        if request.method == 'POST':
+            user_input = request.form.get('asset', '').strip()
+            print(f"[DEBUG] Input: {user_input}")
+
             result = get_asset_data(user_input)
+
+            if not isinstance(result, dict):
+                raise Exception("get_asset_data() did not return dict")
+
             result["input"] = user_input
-            log_scan(user_input, result.get("type", "Unknown"))
+
+            try:
+                log_scan(user_input, result.get("type", "Unknown"))
+            except Exception as log_err:
+                print(f"[LOG ERROR] {log_err}")
+
+    except Exception as main_err:
+        print(f"[MAIN ERROR] {main_err}")
+        result = {
+            "type": "Error",
+            "network": "Unknown",
+            "balance": f"❌ Internal Error: {str(main_err)}",
+            "risk_score": 0,
+            "input": "N/A"
+        }
+
     return render_template('index.html', result=result)
+
 
 @app.route('/export-iso')
 def export_iso():
-    asset = request.args.get("asset", "")
-    result = get_asset_data(asset)
-    xml = generate_iso_xml(result)
-    return send_file(io.BytesIO(xml.encode()), mimetype='application/xml',
-                     as_attachment=True, download_name=f'{asset}_iso.xml')
+    try:
+        asset = request.args.get("asset", "")
+        result = get_asset_data(asset)
+
+        if not isinstance(result, dict):
+            raise Exception("get_asset_data() failed during export")
+
+        xml = generate_iso_xml(result)
+
+        return send_file(
+            io.BytesIO(xml.encode()),
+            mimetype='application/xml',
+            as_attachment=True,
+            download_name=f'{asset}_iso.xml'
+        )
+
+    except Exception as e:
+        print(f"[EXPORT ERROR] {e}")
+        return "❌ Failed to generate ISO report", 500
+
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 1000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=port, debug=True)
