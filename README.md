@@ -28,3 +28,14 @@ git clone https://github.com/ADCoinX/ADC-AssetGuard-AI.git
 cd ADC-AssetGuard-AI
 pip install -r requirements.txt
 python app.py
+
+---
+### ⚠️ Legal Notice
+
+This project is the original work of ADCX Lab (Malaysia). It is protected by international copyright and licensing terms. 
+
+Unauthorized use, resale, or replication is strictly prohibited.
+
+🔒 License: CC BY-NC-ND 4.0  
+✉️ Contact: admin@autodigitalcoin.com  
+🌐 Website: https://autodigitalcoin.com  
